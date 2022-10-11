@@ -1,5 +1,5 @@
 #  minimum required cmake version: 3.1.0
-cmake_minimum_required(VERSION 3.1.0)
+cmake_minimum_required(VERSION 3.5.0)
 project(CppSnip)
 set (CMAKE_CXX_STANDARD 11)
 add_subdirectory(${PROJECT_SOURCE_DIR}/src/cpp_succeed)
@@ -10,3 +10,4 @@ add_subdirectory(${PROJECT_SOURCE_DIR}/src/virtual_item7)
 add_subdirectory(${PROJECT_SOURCE_DIR}/src/shared_ptr)
 add_subdirectory(${PROJECT_SOURCE_DIR}/src/raii_item15)
 add_subdirectory(${PROJECT_SOURCE_DIR}/src/lvalue)
+add_subdirectory(${PROJECT_SOURCE_DIR}/src/cxx_explicit)
