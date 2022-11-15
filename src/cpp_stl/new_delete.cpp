@@ -2,7 +2,7 @@
  * @Author: linhaigoo linhaigoo2013@gmail.com
  * @Date: 2022-10-29 01:40:45
  * @LastEditors: linhaigoo linhaigoo2013@gmail.com
- * @LastEditTime: 2022-11-07 00:22:26
+ * @LastEditTime: 2022-11-12 21:08:02
  * @FilePath: /codeSnip/src/cpp_stl/stl_new_delete.cpp
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置
  * 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
@@ -11,7 +11,9 @@
 #include <list>
 #include <vector>
 template <typename T> struct DeleteT {
-  void operator()(const T *ptr) const // const T * then can be delete ????
+  void operator()(const T *ptr)
+      const // const T * then can be delete ?? refer to
+            // https://stackoverflow.com/questions/755196/deleting-a-pointer-to-const-t-const
   {
     delete ptr;
   }
@@ -28,11 +30,15 @@ int test() {
     vec0.push_back(new obj);
   }
   for (int i = 0; i < 10; i++) {
-    vec1.push_back(new obj);
+    list1.push_back(new obj);
   }
 
-  for_each(vec0.begin(), vec0.end(), DeleteT<obj>());
-  // for_each(vec1.begin(),vec1.end(),DeleteT<obj>);//pvs cannot detect mem leak
+  for_each(vec0.begin(), vec0.end(),
+           DeleteT<obj>()); // pvs cannot detect mem leak if annotate here
+  for_each(list1.begin(), list1.end(),
+           DeleteT<obj>()); // pvs cannot detect mem leak if annotate here
+  //"()" in DeleteT<obj>() just define a object of which the type is
+  // DeleteT<obj>
   return 0;
 }
 
