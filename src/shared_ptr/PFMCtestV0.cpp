@@ -7,101 +7,114 @@
 #include <string>
 #include <vector>
 
-template<typename objType, typename returnType, typename functionType>
-class PFMC
-{public:
-returnType operator()()
+template <typename objType, typename returnType, typename functionType> class PFMC
 {
-    return (pObj->*ptr)();
-}
+  public:
+    returnType operator()()
+    {
+        return (pObj->*ptr)();
+    }
 
-PFMC(objType* _pObj, functionType _ptr):pObj(_pObj),ptr(_ptr)
-{
-    
-}
-    private:
+    PFMC(objType *_pObj, functionType _ptr) : pObj(_pObj), ptr(_ptr)
+    {
+    }
+
+  private:
     functionType const ptr;
     objType *const pObj;
 };
 
-template <typename objType>
-class sptr
+template <typename objType> class sptr
 {
     struct deleteor
     {
-        virtual void delfunc(void *)=0;
+        virtual void delfunc(void *) = 0;
     };
 
-    template<typename subObjType>
-    struct specDeleteor:public deleteor
+    template <typename subObjType> struct specDeleteor : public deleteor
     {
-        void delfunc(void * ptr) override
+        void delfunc(void *ptr) override
         {
-            delete (subObjType*)ptr; 
+            delete (subObjType *)ptr;
         }
     };
 
-    public:
-    
-
-    template<typename subObjType>
-    sptr(subObjType *_ptr)
+  public:
+    template <typename subObjType> sptr(subObjType *_ptr)
     {
-      ptr = _ptr;
-      del = new specDeleteor<subObjType>();
+        ptr = _ptr;
+        del = new specDeleteor<subObjType>();
     }
 
     ~sptr()
     {
-        if(del)
-        del->delfunc(ptr);
+        if (del)
+            del->delfunc(ptr);
         // delete ptr;
         delete del;
     }
 
-    template<typename returnType>
-    PFMC<objType, returnType, returnType(objType::*)()> operator->*(returnType(objType::*funcPtr)())
+    template <typename returnType>
+    PFMC<objType, returnType, returnType (objType::*)()> operator->*(returnType (objType::*funcPtr)())
     {
-       return PFMC<objType, returnType, returnType(objType::*)()>(ptr, funcPtr);
+        return PFMC<objType, returnType, returnType (objType::*)()>(ptr, funcPtr);
     }
-    private:
+
+  private:
     objType *ptr;
     struct deleteor *del = nullptr;
-
 };
 
-class wombat {
-   public:
-    void sleep() { std::cout << "sleep wombat" << std::endl; }
-    void eat() { std::cout << "eat wombat" << std::endl; }
-    virtual void dig() { std::cout << "dig wombat" << std::endl; }
+class wombat
+{
+  public:
+    void sleep()
+    {
+        std::cout << "sleep wombat" << std::endl;
+    }
+    void eat()
+    {
+        std::cout << "eat wombat" << std::endl;
+    }
+    virtual void dig()
+    {
+        std::cout << "dig wombat" << std::endl;
+    }
     ~wombat()
     {
-        std::cout<< __FUNCTION__ << std::endl;
+        std::cout << __FUNCTION__ << std::endl;
     }
 };
 
-class womwombat: public wombat
+class womwombat : public wombat
 {
-    public:
-    void sleep() { std::cout << "sleep womwombat" << std::endl; }
-    virtual void dig() { std::cout << "dig womwombat" << std::endl; }
+  public:
+    void sleep()
+    {
+        std::cout << "sleep womwombat" << std::endl;
+    }
+    virtual void dig()
+    {
+        std::cout << "dig womwombat" << std::endl;
+    }
     ~womwombat()
     {
-        std::cout<< __FUNCTION__ << std::endl;
+        std::cout << __FUNCTION__ << std::endl;
     }
 };
 
-int main() {
+int main()
+{
     typedef void (wombat::*PWMF)(void);
     PWMF pmf = &wombat::sleep;
-    wombat* pObjROO = new womwombat;
+    wombat *pObjROO = new womwombat;
     (pObjROO->*pmf)();
 
     typedef void (womwombat::*subPWMF)(void);
     subPWMF subpmf = &womwombat::sleep;
-    sptr<womwombat> spOObj=new womwombat;
-    womwombat* pOObjROO=new womwombat;
+
+    sptr<womwombat> spOObj = new womwombat;
+    womwombat *pOObjROO = new womwombat;
 
     // (pObj->*subpmf)();//type unamtch
 
@@ -115,8 +128,8 @@ int main() {
 
     subPWMF subpmfOverlap = &womwombat::sleep;
     PWMF pmfOverlap = &wombat::sleep;
-    ((womwombat*)pObjROO->*subpmfOverlap)();
-    ((womwombat*)pObjROO->*pmfOverlap)();
+    ((womwombat *)pObjROO->*subpmfOverlap)();
+    ((womwombat *)pObjROO->*pmfOverlap)();
     (pObjROO->*pmfOverlap)();
 
     (pObjROO->*pmfConv)();
@@ -127,9 +140,8 @@ int main() {
     PWMF pmfVirtual = &wombat::dig;
     (pObjROO->*pmfVirtual)();
     (pOObjROO->*pmfVirtual)();
-    wombat* pObjRO = new wombat;
+    wombat *pObjRO = new wombat;
     (pObjRO->*pmfVirtual)();
-
 
     // pmfConv = subpmf;//cannot conversion
 
