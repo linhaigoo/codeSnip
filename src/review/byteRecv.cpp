@@ -5,18 +5,17 @@ int square(int num) {
 }
 */
 
+#include <stdio.h>
 #include <stdlib.h>
-
-#include <iostream>
-#include <string>
 
 using namespace std;
 
-void get_char(const char c) {
+void pack_char(const char c) {
     static char* tmp = (char*)malloc(100);
     static int index = 0;
     static int state = 0;
-    if (c != '\r' && c != '\n') tmp[index++] = c;
+    if (c != '\r' && c != '\n')
+     tmp[index++] = c;
     switch (state) {
         case 0:
             if (c == '\r') {
@@ -33,16 +32,22 @@ void get_char(const char c) {
     }
 
     if (state == 2) {
-        tmp[index + 1] = '\0';
+        tmp[index] = '\0';
         printf("%s\r\n", tmp);
         state = 0;
         index = 0;
     }
 }
 
-int main() {
-    const char chr[] = "1234\n\r6578\r\n1234\r\n";
-    for (char c : chr) {
-        get_char(c);
-    }
+
+
+
+int main()
+{
+  const char *str1 = "12345678\r\n910\n\r1234\r\n5678\r\n";//example 1
+  char chr;
+  while(( chr = *(str1++))!= '\0')
+  {
+    pack_char(chr);
+  }
 }

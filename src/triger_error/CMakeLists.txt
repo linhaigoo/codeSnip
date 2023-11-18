@@ -1,0 +1,5 @@
+cmake_minimum_required(VERSION 3.5.0)
+project(triger_error)
+set (CMAKE_CXX_STANDARD 14)
+add_subdirectory(${PROJECT_SOURCE_DIR}/return_local)
+add_subdirectory(${PROJECT_SOURCE_DIR}/void_empty_c_func)
