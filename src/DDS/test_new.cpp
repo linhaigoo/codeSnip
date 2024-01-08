@@ -116,10 +116,16 @@ typedef struct
 
 typedef struct
 {
+    int domain_id;
+    int node_id;
     int ipc_id;
+    int shm_id;
     int name_hash;
     char name[28];
     int pub_cnt;
+    int cahce_num;
+    int pid;
+    uint64_t qos;
 } topic_t;
 
 typedef struct
@@ -255,7 +261,7 @@ typedef struct
 
 static core_stat_t core_stat;
 
-int open_core_node()
+int open_core_node_loop(int dommain_id)
 {
     signal(SIGTERM, signal_handler);
     int ret = 0;
@@ -265,9 +271,9 @@ int open_core_node()
     int cur_id = getpid();
 
     const char *msg_key_magic = DDS_MSG_KEY_MAGIC_STR;
-    int msgq_r_key = *(const uint32_t *)(msg_key_magic) + 1;
-    int msgq_s_key = *(const uint32_t *)(msg_key_magic) + 0;
-    int shm_map_key = *(const uint32_t *)(DDS_MSG_KEY_MAGIC_STR);
+    int msgq_r_key = *(const uint32_t *)(msg_key_magic) + 1;      // domain: node
+    int msgq_s_key = *(const uint32_t *)(msg_key_magic) + 0;      // domain: node
+    int shm_map_key = *(const uint32_t *)(DDS_MSG_KEY_MAGIC_STR); // domain: core node
 
     do
     {
@@ -324,19 +330,22 @@ int open_core_node()
                 const core_msg_t *req = (const core_msg_t *)&r_msg.data;
                 switch (req->req_type)
                 {
-                case IPC_CORE_REQ_PUB: {
+                case IPC_CORE_REQ_PUB:
+                {
                     const topic_t *topic = (const topic_t *)req->data;
                     register_core_node_map(node_map, topic);
                 }
                 break;
 
-                case IPC_CORE_REQ_PUB_RM: {
+                case IPC_CORE_REQ_PUB_RM:
+                {
                     const topic_t *topic = (const topic_t *)req->data;
                     unregister_core_node_map(node_map, topic);
                 }
                 break;
 
-                case IPC_CORE_REQ_SUB: {
+                case IPC_CORE_REQ_SUB:
+                {
                     const topic_t *topic = (const topic_t *)req->data;
                     const topic_t *find_topic = find_core_node_map(node_map, topic);
                     if (find_topic)
@@ -348,7 +357,7 @@ int open_core_node()
                         topic_t *ack_topic = (topic_t *)req->data;
                         memcpy(ack_topic, find_topic, sizeof(topic_t));
 
-                        ack_msg.size = sizeof(ipc_port_msg_t) + ack_req->size;
+                        ack_msg.size = sizeof(ack_msg.size) + ack_req->size;
                         ack_msg.type = topic->ipc_id;
                         msgsnd(msgq_s_id, &ack_msg, sizeof(ack_msg.data) + sizeof(ack_msg.size), IPC_NOWAIT);
                     }
@@ -374,14 +383,14 @@ int open_core_node()
     // don't remove shm_core_id
 }
 
-struct pub_node *open_pub_node(const char *name, int domain_id)
+struct pub_node *open_pub_node(int domain_id, const char *name, int cache_num)
 {
+    int cur_id = getpid();
     int msgq_id = -1;
 
     const char *msg_key_magic = DDS_MSG_KEY_MAGIC_STR;
-    int msgq_r_key = *(const uint32_t *)(msg_key_magic) + 0;
-    int msgq_s_key = *(const uint32_t *)(msg_key_magic) + 1;
-    ipc_port_msg_t *pub_msg = nullptr;
+    int msgq_r_key = *(const uint32_t *)(msg_key_magic) + 0; // domain: node
+    int msgq_s_key = *(const uint32_t *)(msg_key_magic) + 1; // domain: node
 
     int ret = 0;
     do
@@ -392,20 +401,24 @@ struct pub_node *open_pub_node(const char *name, int domain_id)
             ret = -1;
             break;
         }
-
-        pub_msg = (ipc_port_msg_t *)calloc(1, sizeof(ipc_port_msg_t) + sizeof(ipc_port_info_t));
-        ipc_port_info_t *port_info = (ipc_port_info_t *)&pub_msg->data[0];
-        const char *msg_type_magic = DDS_MSG_TYPE_MAGIC_STR;
-        long msgtype = *(const uint32_t *)(msg_type_magic);
-        pub_msg->type = msgtype;
-
-        strncpy(port_info->nodename, name, sizeof(port_info->nodename));
         int shm_id = shmget(0, 4096, IPC_CREAT | 0604);
 
         if (shm_id == -1)
         {
             break;
         }
+
+        ipc_port_msg_t pub_msg;
+        core_msg_t *req = (core_msg_t *)&pub_msg.data;
+        topic_t *topic = (topic_t *)req->data;
+        topic->cahce_num = cache_num;
+        topic->ipc_id = shm_id;
+
+        req->req_type = IPC_CORE_REQ_SUB;
+        pub_msg.size = sizeof(pub_msg.size) + req->size;
+        pub_msg.type = cur_id;
+
+        strncpy(port_info->nodename, name, sizeof(port_info->nodename));
 
         struct pub_node *node = (struct pub_node *)shmat(shm_id, nullptr, 0);
         memset(node, 0, sizeof(struct pub_node));
